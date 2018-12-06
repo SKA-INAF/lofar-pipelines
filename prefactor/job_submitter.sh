@@ -34,6 +34,8 @@ if [ "$NARGS" -lt 2 ]; then
 	echo "--addrunindex - Append a run index to submission script (in case of list execution) (default=no)"	
 	echo "--nproc=[NPROC] - Number of  processors per node used  (default=1)"
 	echo "--nthreads=[NTHREADS] - Number of threads to be used in multithreaded pipeline stage (default=1)"
+	echo "--nproc-step2=[NPROC_STEP2] - Number of  processors per node used in stage 2 (default=1)"
+	echo "--nthreads-step2=[NTHREADS_STEP2] - Number of threads to be used in multithreaded pipeline stage 2 (default=1)"
 	echo "--containeroptions=[CONTAINER_OPTIONS] - Options to be passed to container run (e.g. -B /home/user:/home/user) (default=none)"
 	echo ""
 
@@ -62,7 +64,6 @@ BATCH_SYSTEM="PBS"
 CONTAINER_IMG=""
 CONTAINER_OPTIONS=""
 APPEND_RUN_INDEX=false
-NPROC=1
 DO_CALIBRATOR_CAL_STEP1=true
 DO_CALIBRATOR_CAL_STEP2=true
 DO_TARGET_CAL_STEP1=true
@@ -78,7 +79,10 @@ JOB_USER_GROUP_OPTION=""
 JOB_NNODES="1"
 JOB_NCPUS="1"
 OUTPUT_DIR=$PWD
+NPROC=1
+NPROC_STEP2=1
 NTHREADS=1
+NTHREADS_STEP2=1
 
 
 for item in "$@"
@@ -131,8 +135,14 @@ do
 		--nproc=*)
       NPROC=`echo $item | sed 's/[-a-zA-Z0-9]*=//'`
     ;;
+		--nproc-step2=*)
+      NPROC_STEP2=`echo $item | sed 's/[-a-zA-Z0-9]*=//'`
+    ;;
 		--nthreads=*)
     	NTHREADS=`echo $item | sed 's/[-a-zA-Z0-9]*=//'`
+    ;;
+		--nthreads-step2=*)
+    	NTHREADS_STEP2=`echo $item | sed 's/[-a-zA-Z0-9]*=//'`
     ;;
 			
 		## - SUBMISSION OPTIONS
@@ -361,6 +371,10 @@ if [ "$DO_CALIBRATOR_CAL_STEP1" = true ]; then
 		run_script="run_calib-RUN$index.sh"
 		submit_script="submit_calib-RUN$index.sh" 
 
+		## Define job dir
+		dataoutdir="$OUTPUT_DIR/working/calib-RUN$index"
+		datadestdir="$OUTPUT_DIR/working"
+
 		## Generate config files
 		echo "INFO: Generating config files $parset_file $pipeline_file ..."
 		create_cfg_cal.sh $parset_file $pipeline_file $datadir $inputfile $OUTPUT_DIR $NPROC $NTHREADS
@@ -369,7 +383,7 @@ if [ "$DO_CALIBRATOR_CAL_STEP1" = true ]; then
 		##echo "INFO: Generating run script $run_script and submit script $submit_script ..."
 		##create_shfile_step1.sh $run_script $submit_script $parset_file $pipeline_file $CONTAINER_IMG $CONTAINER_OPTIONS	
 		echo "INFO: Generating run script $run_script ..."	
-		create_run_cal.sh $run_script $parset_file $pipeline_file
+		create_run_cal.sh $run_script $parset_file $pipeline_file $dataoutdir $datadestdir
 	
 		## Generate cal submit script
 		echo "INFO: Generating cal submit script $submit_script"
@@ -423,7 +437,7 @@ if [ "$DO_CALIBRATOR_CAL_STEP2" = true ]; then
 
 	## Generate config files
 	echo "INFO: Generating cal merge config files $parset_file $pipeline_file ..."
-	create_cfg_calmerge.sh $parset_file $pipeline_file $datadir $inputfile $OUTPUT_DIR $NPROC $NTHREADS
+	create_cfg_calmerge.sh $parset_file $pipeline_file $datadir $inputfile $OUTPUT_DIR $NPROC_STEP2 $NTHREADS_STEP2
 
 	## Generate run script
 	echo "INFO: Generating cal merge run script $run_script ..."	
