@@ -23,7 +23,7 @@ generate_run_script(){
 			echo "prmon -f $prmon_file -j $prmon_json -i 30 -- genericpipeline.py -v -d -c $pipeline_cfg_file $parset_file"
 			echo ""
 
-			echo 'echo "Moving output data from dir "'"$data_outdir"' to '"$data_destdir"' ..."'
+			echo 'echo "Moving output data from dir '"$data_outdir"' to '"$data_destdir"' ..."'
 			echo "mv $data_outdir/*.ndppp_prep_cal $data_destdir" 
 
  	) > $shfile
