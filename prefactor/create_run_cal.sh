@@ -23,8 +23,9 @@ generate_run_script(){
 			echo "prmon -f $prmon_file -j $prmon_json -i 30 -- genericpipeline.py -v -d -c $pipeline_cfg_file $parset_file"
 			echo ""
 
+			## Copying output data to storage
 			echo 'echo "Moving output data from dir '"$data_outdir"' to '"$data_destdir"' ..."'
-			echo "mv $data_outdir/*.ndppp_prep_cal $data_destdir" 
+			echo "cp -rp $data_outdir/*.ndppp_prep_cal $data_destdir" 
 
  	) > $shfile
 
@@ -47,7 +48,6 @@ filename_base=$(basename "$RUN_SCRIPT")
 filename_base_noext="${filename_base%.*}"
 prmon_file="prmon_$filename_base_noext.txt"
 prmon_json="prmon_$filename_base_noext.json"
-echo "prmon_file=$prmon_file"
 
 CURRENT_DIR=$PWD
 

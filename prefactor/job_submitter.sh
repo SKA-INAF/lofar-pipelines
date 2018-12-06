@@ -29,7 +29,8 @@ if [ "$NARGS" -lt 2 ]; then
 	echo "--no-target-step1 - Do not perform target cal step 1 (default=true)"
 	echo "--no-target-step2 - Do not perform target cal step 2 (default=true)"
 	echo "--envfile=[ENV_FILE] - File (.sh) with list of environment variables to be loaded by each processing node"
-	echo "--outdir=[OUTPUT_DIR] - Output directory where to put run output file (default=pwd)"
+	echo "--outdir=[OUTPUT_DIR] - Output directory where to write run output file (default=pwd)"
+	echo "--storagedir=[STORAGE_DIR] - Output directory where to store run output files (default=pwd)"
 	echo "--maxfiles=[NMAX_PROCESSED_FILES] - Maximum number of input files processed in filelist (default=-1=all files)"
 	echo "--addrunindex - Append a run index to submission script (in case of list execution) (default=no)"	
 	echo "--nproc=[NPROC] - Number of  processors per node used  (default=1)"
@@ -79,6 +80,8 @@ JOB_USER_GROUP_OPTION=""
 JOB_NNODES="1"
 JOB_NCPUS="1"
 OUTPUT_DIR=$PWD
+STORAGE_DIR=$PWD
+STORAGE_DIR_GIVEN=false
 NPROC=1
 NPROC_STEP2=1
 NTHREADS=1
@@ -123,6 +126,12 @@ do
 		--outdir=*)
     	OUTPUT_DIR=`echo $item | sed 's/[-a-zA-Z0-9]*=//'`
     ;;
+		--storagedir=*)
+    	STORAGE_DIR=`echo $item | sed 's/[-a-zA-Z0-9]*=//'`
+			if [ "$STORAGE_DIR" != "" ]; then
+				STORAGE_DIR_GIVEN=true
+			fi
+    ;;
 		--containeroptions=*)
     	CONTAINER_OPTIONS=`echo $item | sed 's/[-a-zA-Z0-9]*=//'`
     ;;
@@ -160,7 +169,7 @@ do
     ;;
 		--jobwalltime=*)
 			JOB_WALLTIME=`echo $item | sed 's/[-a-zA-Z0-9]*=//'`	
-		;;	
+		;;
 		--jobcpus=*)
       JOB_NCPUS=`echo $item | sed 's/[-a-zA-Z0-9]*=//'`
     ;;
@@ -336,6 +345,13 @@ mkdir -p $OUTPUT_DIR/log
 mkdir -p $OUTPUT_DIR/runtime
 mkdir -p $OUTPUT_DIR/working
 
+## Set storage dir
+if [ "$STORAGE_DIR_GIVEN" = false ]; then
+	STORAGE_DIR="$OUTPUT_DIR/storage"
+	echo "INFO: Setting STORAGE_DIR to $STORAGE_DIR ..."
+	mkdir -p $STORAGE_DIR
+fi
+
 cd $BASEDIR
 
 #######################################
@@ -373,7 +389,8 @@ if [ "$DO_CALIBRATOR_CAL_STEP1" = true ]; then
 
 		## Define job dir
 		dataoutdir="$OUTPUT_DIR/working/calib-RUN$index"
-		datadestdir="$OUTPUT_DIR/working"
+		##datadestdir="$OUTPUT_DIR/working"
+    datadestdir="$STORAGE_DIR"
 
 		## Generate config files
 		echo "INFO: Generating config files $parset_file $pipeline_file ..."
@@ -422,7 +439,11 @@ if [ "$DO_CALIBRATOR_CAL_STEP2" = true ]; then
 
 	## Define input output files
 	inputfile="*dppp_prep_cal"
-	datadir="$OUTPUT_DIR/working"
+	#datadir="$OUTPUT_DIR/working"
+	datadir="$STORAGE_DIR"
+	
+	datadir_output="$OUTPUT_DIR"
+	datadir_storage="$STORAGE_DIR"
 
 	## Define config files
 	parset_file="calibmerge.parset"
@@ -441,7 +462,7 @@ if [ "$DO_CALIBRATOR_CAL_STEP2" = true ]; then
 
 	## Generate run script
 	echo "INFO: Generating cal merge run script $run_script ..."	
-	create_run_calmerge.sh $run_script $parset_file $pipeline_file
+	create_run_calmerge.sh $run_script $parset_file $pipeline_file $datadir_output $datadir_storage
 
 	## Generate submit script
 	echo "INFO: Generating cal submit script $submit_script"
